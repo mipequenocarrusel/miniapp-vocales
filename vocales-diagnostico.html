@@ -1349,6 +1349,16 @@ function restartAll(){
   cb.style.opacity='.45'; cb.style.pointerEvents='none';
   nav('scr-1');
 }
+/* --- CÓDIGO PARA SALTAR AL PLAN DESDE SYSTEME.IO --- */
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('paso') === 'plan') {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    buildPlan();
+    setupPackUI();
+    document.getElementById('scr-6').classList.add('active');
+  }
+});
 </script>
 </body>
 </html>
