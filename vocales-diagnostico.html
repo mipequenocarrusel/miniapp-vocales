@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Juego Diagnóstico de Vocales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ╔══════════════════════════════════════════════╗
+   ║  DESIGN TOKENS                               ║
+   ╚══════════════════════════════════════════════╝ */
+:root{
+  --bg:       #FFFDF7;
+  --surface:  #FFFFFF;
+  --text:     #9B59B6;
+  --muted:    #8E9EB5;
+  --border:   #EDE8DC;
+  --primary:  #FF7AB6;
+  --primary-d:#FF7AB6;
+  --correct:  #2ECC71;
+  --error:    #FF8A65;
+  --yellow:   #FFD93D;
+  --orange:   #FF9F43;
+  --blue:     #3B9EFF;
+  --purple:   #9B59B6;
+  --teal:     #1ABC9C;
+  --shadow-s: 0 4px 14px rgba(0,0,0,.08);
+  --shadow-m: 0 8px 28px rgba(0,0,0,.11);
+  --shadow-l: 0 16px 48px rgba(0,0,0,.14);
+  --r-pill:   100px;
+  --r-card:   24px;
+  --r-lg:     32px;
+
+  /* vowel brand colors */
+  --vA: #FF5757; --vA-g: #FF3B3B;
+  --vE: #FF9F43; --vE-g: #F9842A;
+  --vI: #2ECC71; --vI-g: #27AE60;
+  --vO: #3B9EFF; --vO-g: #2980B9;
+  --vU: #9B59B6; --vU-g: #8E44AD;
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  RESET + BASE                                ║
+   ╚══════════════════════════════════════════════╝ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow-x:hidden;}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  position:relative;
+}
+
+/* Ambient radial blobs */
+body::before{
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 55% 38% at 5%  8%,  rgba(255,87,87,.07) , transparent),
+    radial-gradient(ellipse 45% 45% at 95% 88%, rgba(155,89,182,.07), transparent),
+    radial-gradient(ellipse 35% 35% at 50% 50%, rgba(255,217,61,.05) , transparent);
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN SYSTEM                               ║
+   ╚══════════════════════════════════════════════╝ */
+.screen{
+  display:none;
+  min-height:100vh;
+  width:100%;
+  padding:30px 20px 68px;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  z-index:1;
+}
+.screen.active{
+  display:flex;
+  animation:screenSlideIn .38s cubic-bezier(.25,.87,.4,1.05) both;
+}
+@keyframes screenSlideIn{
+  from{opacity:0;transform:translateY(22px)}
+  to  {opacity:1;transform:translateY(0)}
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  LOGO                                        ║
+   ╚══════════════════════════════════════════════╝ */
+.logo{
+  width:140px;
+  margin-bottom:15px;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.15));
+  animation:floatY 3.5s ease-in-out infinite;
+}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* SVG fallback logo (shown when image 404s) */
+.logo-fallback{
+  display:none;
+  width:140px;height:90px;
+  margin-bottom:15px;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.15));
+  animation:floatY 3.5s ease-in-out infinite;
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  TYPOGRAPHY                                  ║
+   ╚══════════════════════════════════════════════╝ */
+.h1{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.85rem,7.5vw,2.7rem);
+  color:#9B59B6;line-height:1.15;
+  text-align:center;margin-bottom:10px;
+}
+.h1 em{color:var(--primary);font-style:normal;}
+.h2{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.35rem,5.5vw,2rem);
+  color:var(--text);line-height:1.2;
+  text-align:center;margin-bottom:8px;
+}
+.h3{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.05rem,4.5vw,1.45rem);
+  color:var(--text);line-height:1.25;
+  text-align:center;margin-bottom:6px;
+}
+.body{
+  font-size:clamp(.9rem,3.8vw,1.05rem);
+  color:var(--muted);font-weight:600;
+  line-height:1.65;text-align:center;
+  max-width:300px;margin-bottom:26px;
+}
+.label{
+  font-size:.75rem;font-weight:800;
+  color:var(--muted);letter-spacing:.6px;
+  text-transform:uppercase;text-align:center;
+  margin-bottom:8px;
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  GLOBAL BUTTONS                              ║
+   ╚══════════════════════════════════════════════╝ */
+.btn{
+  font-family:'Nunito',sans-serif;font-weight:800;
+  border:none;border-radius:var(--r-pill);
+  cursor:pointer;position:relative;overflow:hidden;
+  outline:none;-webkit-font-smoothing:antialiased;
+  user-select:none;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),
+             box-shadow .2s ease, background .12s ease;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;
+  background:rgba(255,255,255,0);
+  transition:background .12s;border-radius:inherit;
+}
+.btn:active::after{background:rgba(255,255,255,.22);}
+.btn:active{transform:scale(.93)!important;}
+
+.btn-primary{
+  background:var(--primary);color:#fff;
+  font-size:1.1rem;padding:18px 48px;
+  box-shadow:0 7px 22px rgba(255,87,87,.42);
+}
+.btn-primary:hover{
+  background:var(--primary-d);
+  transform:translateY(-3px);
+  box-shadow:0 12px 30px rgba(255,87,87,.46);
+}
+.btn-ghost{
+  background:var(--surface);color:var(--text);
+  font-size:.93rem;padding:13px 26px;
+  border:2.5px solid var(--border);
+  box-shadow:var(--shadow-s);
+}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-2px);}
+
+/* Pack buttons */
+.btn-pack{
+  width:100%;max-width:310px;
+  font-size:1.12rem;padding:20px 36px;
+  border-radius:22px;color:#fff;
+  text-align:center;
+}
+.btn-pack.basico{
+  background:linear-gradient(135deg,#FF5757,#FF9F43);
+  box-shadow:0 8px 26px rgba(255,87,87,.42);
+}
+.btn-pack.basico:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 36px rgba(255,87,87,.46);}
+.btn-pack.intermedio{
+  background:linear-gradient(135deg,#FF9F43,#FFD93D);
+  box-shadow:0 8px 26px rgba(255,159,67,.42);
+}
+.btn-pack.intermedio:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 36px rgba(255,159,67,.46);}
+.btn-pack.premium{
+  background:linear-gradient(135deg,#9B59B6,#3B9EFF);
+  box-shadow:0 8px 26px rgba(155,89,182,.42);
+}
+.btn-pack.premium:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 36px rgba(155,89,182,.46);}
+
+/* Surprise button */
+.btn-surprise{
+  background:linear-gradient(135deg,#1ABC9C,#3B9EFF);
+  color:#fff;font-size:1rem;padding:15px 32px;
+  box-shadow:0 6px 20px rgba(26,188,156,.38);
+}
+.btn-surprise:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(26,188,156,.44);}
+
+/* Music toggle */
+.music-pill{
+  position:fixed;top:14px;right:14px;
+  width:48px;height:48px;border-radius:50%;
+  background:var(--surface);border:2.5px solid var(--border);
+  font-size:1.3rem;cursor:pointer;z-index:400;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-s);
+  transition:all .2s;
+}
+.music-pill:hover{border-color:var(--primary);transform:scale(1.1);}
+
+/* Back nav */
+.back-nav{
+  position:absolute;top:20px;left:18px;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--surface);border:2.5px solid var(--border);
+  font-size:1.1rem;cursor:pointer;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-s);
+  transition:all .2s;color:var(--text);
+}
+.back-nav:hover{border-color:var(--primary);color:var(--primary);}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  VOWEL PARADE (decorative)                   ║
+   ╚══════════════════════════════════════════════╝ */
+.vowel-parade{display:flex;gap:9px;margin-bottom:28px;}
+.vp{
+  width:50px;height:50px;border-radius:15px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:1.6rem;color:#fff;
+  box-shadow:0 5px 15px rgba(0,0,0,.17);
+  animation:wobble 3s infinite;
+}
+.vp:nth-child(1){background:linear-gradient(145deg,var(--vA),var(--vA-g));animation-delay:0s}
+.vp:nth-child(2){background:linear-gradient(145deg,var(--vE),var(--vE-g));animation-delay:.18s}
+.vp:nth-child(3){background:linear-gradient(145deg,var(--vI),var(--vI-g));animation-delay:.36s}
+.vp:nth-child(4){background:linear-gradient(145deg,var(--vO),var(--vO-g));animation-delay:.54s}
+.vp:nth-child(5){background:linear-gradient(145deg,var(--vU),var(--vU-g));animation-delay:.72s}
+@keyframes wobble{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(4deg) scale(1.08)}}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 2 — AGE BUTTONS                      ║
+   ╚══════════════════════════════════════════════╝ */
+.age-grid{
+  display:flex;flex-direction:column;
+  gap:10px;width:100%;max-width:280px;
+  margin-bottom:22px;
+}
+.btn-age{
+  display:flex;align-items:center;gap:14px;
+  background:var(--surface);border-radius:18px;
+  padding:17px 22px;font-size:1.2rem;font-weight:800;
+  color:var(--text);border:2.5px solid var(--border);
+  box-shadow:var(--shadow-s);cursor:pointer;
+  transition:border-color .2s,background .2s,
+             transform .2s cubic-bezier(.34,1.56,.64,1),
+             box-shadow .2s,color .15s;
+  text-align:left;
+}
+.btn-age .ico{font-size:1.55rem;}
+.btn-age:hover,.btn-age.sel{
+  border-color:var(--primary);background:#FFF0F0;
+  color:var(--primary);
+  transform:translateX(6px);
+  box-shadow:0 5px 18px rgba(255,87,87,.22);
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 3 — CHECKBOX OPTIONS                 ║
+   ╚══════════════════════════════════════════════╝ */
+.check-stack{
+  display:flex;flex-direction:column;gap:10px;
+  width:100%;max-width:340px;margin-bottom:24px;
+}
+.check-row{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface);border-radius:16px;
+  padding:14px 18px;cursor:pointer;
+  border:2.5px solid var(--border);
+  box-shadow:var(--shadow-s);
+  transition:border-color .2s,background .2s,
+             transform .18s cubic-bezier(.34,1.56,.64,1);
+  user-select:none;
+}
+.check-row:hover{border-color:var(--primary);transform:translateX(4px);}
+.check-row.checked{border-color:var(--primary);background:#FFF0F0;}
+.check-box{
+  width:24px;height:24px;flex-shrink:0;
+  border-radius:8px;border:2.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;color:transparent;
+  transition:background .2s,border-color .2s,color .15s;
+}
+.check-row.checked .check-box{
+  background:var(--primary);border-color:var(--primary);color:#fff;
+}
+.check-text{font-weight:700;font-size:.94rem;color:var(--text);}
+.check-row.checked .check-text{color:var(--primary);}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 4 — QUIZ                             ║
+   ╚══════════════════════════════════════════════╝ */
+.quiz-bar-wrap{
+  width:100%;max-width:380px;
+  margin-bottom:20px;
+}
+.quiz-bar-row{
+  display:flex;justify-content:space-between;
+  align-items:center;margin-bottom:6px;
+}
+.quiz-bar-label{font-size:.8rem;font-weight:800;color:var(--muted);}
+.star-track{font-size:1.2rem;letter-spacing:2px;}
+.bar-bg{
+  height:10px;background:var(--border);
+  border-radius:100px;overflow:hidden;
+}
+.bar-fill{
+  height:100%;border-radius:100px;
+  background:linear-gradient(90deg,var(--primary),var(--orange));
+  transition:width .5s cubic-bezier(.6,0,.4,1);
+}
+
+.quiz-q{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.1rem,5vw,1.4rem);
+  color:var(--text);text-align:center;
+  margin-bottom:22px;line-height:1.3;
+}
+
+/* Word card */
+.word-card{
+  background:var(--surface);border-radius:28px;
+  box-shadow:var(--shadow-m);
+  padding:28px 36px 20px;text-align:center;
+  margin-bottom:22px;width:100%;max-width:290px;
+  position:relative;
+}
+.wc-emoji{font-size:80px;line-height:1;display:block;margin-bottom:10px;}
+.wc-word{
+  font-family:'Fredoka One',cursive;
+  font-size:1.65rem;color:var(--text);
+  letter-spacing:2px;
+}
+
+/* Attempt dots */
+.attempt-dots{
+  display:flex;gap:6px;justify-content:center;
+  margin-bottom:10px;min-height:16px;
+}
+.adot{
+  width:11px;height:11px;border-radius:50%;
+  background:var(--error);
+  animation:dotPop .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes dotPop{from{transform:scale(0)}to{transform:scale(1)}}
+
+/* Vowel answer buttons */
+.vowel-row{
+  display:flex;flex-wrap:wrap;gap:12px;
+  justify-content:center;
+  max-width:340px;width:100%;margin-bottom:16px;
+}
+.vbtn{
+  width:62px;height:62px;border-radius:20px;
+  font-family:'Fredoka One',cursive;font-size:1.8rem;
+  color:#fff;border:none;cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,.18);
+  position:relative;overflow:hidden;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
+}
+.vbtn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .12s;border-radius:inherit;}
+.vbtn:active::after{background:rgba(255,255,255,.25);}
+.vbtn:hover{transform:translateY(-4px) scale(1.11);}
+.vbtn:active{transform:scale(.88)!important;}
+.vbtn:disabled{opacity:.42;pointer-events:none;}
+.vbtn.A{background:linear-gradient(145deg,var(--vA),var(--vA-g));box-shadow:0 6px 18px rgba(255,87,87,.45);}
+.vbtn.E{background:linear-gradient(145deg,var(--vE),var(--vE-g));box-shadow:0 6px 18px rgba(255,159,67,.45);}
+.vbtn.I{background:linear-gradient(145deg,var(--vI),var(--vI-g));box-shadow:0 6px 18px rgba(46,204,113,.45);}
+.vbtn.O{background:linear-gradient(145deg,var(--vO),var(--vO-g));box-shadow:0 6px 18px rgba(59,158,255,.45);}
+.vbtn.U{background:linear-gradient(145deg,var(--vU),var(--vU-g));box-shadow:0 6px 18px rgba(155,89,182,.45);}
+.vbtn.anim-pop {animation:vPop  .45s cubic-bezier(.34,1.56,.64,1);}
+.vbtn.anim-shake{animation:vShake .4s ease;}
+@keyframes vPop  {0%{transform:scale(1)}45%{transform:scale(1.38)}100%{transform:scale(1)}}
+@keyframes vShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+
+/* Feedback pill */
+.fb-pill{
+  border-radius:var(--r-pill);
+  padding:12px 30px;
+  font-weight:800;font-size:.98rem;
+  opacity:0;transform:scale(.8) translateY(6px);
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  min-height:46px;
+}
+.fb-pill.show{opacity:1;transform:scale(1) translateY(0);}
+.fb-pill.ok {background:#D4FAE8;color:#065F46;}
+.fb-pill.err{background:#FFE8D8;color:#7C2D12;}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 5 — RESULTS                          ║
+   ╚══════════════════════════════════════════════╝ */
+.score-ring{
+  width:140px;height:140px;position:relative;
+  margin:0 auto 20px;
+}
+.score-ring svg{transform:rotate(-90deg);width:140px;height:140px;}
+.ring-track{fill:none;stroke:var(--border);stroke-width:13;}
+.ring-prog{
+  fill:none;stroke:var(--correct);stroke-width:13;
+  stroke-linecap:round;
+  stroke-dasharray:345;stroke-dashoffset:345;
+  transition:stroke-dashoffset 1.3s cubic-bezier(.6,0,.4,1);
+}
+.ring-center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;line-height:1;
+}
+.ring-pct{
+  font-family:'Fredoka One',cursive;
+  font-size:1.75rem;color:var(--text);display:block;
+}
+.ring-sub{font-size:.7rem;font-weight:700;color:var(--muted);}
+
+.result-card{
+  background:var(--surface);border-radius:var(--r-card);
+  box-shadow:var(--shadow-m);
+  padding:20px 22px;width:100%;max-width:340px;
+  margin-bottom:14px;
+}
+.rc-head{
+  font-family:'Fredoka One',cursive;
+  font-size:.95rem;color:var(--muted);margin-bottom:8px;
+}
+.rc-body{font-weight:700;font-size:1rem;color:var(--text);line-height:1.55;}
+.rc-body strong{color:var(--primary);}
+
+.missed-pills{
+  display:flex;gap:9px;justify-content:center;
+  flex-wrap:wrap;margin:6px 0 18px;
+}
+.mpill{
+  width:50px;height:50px;border-radius:15px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:1.45rem;color:#fff;
+  box-shadow:0 4px 13px rgba(255,138,101,.42);
+}
+.mpill.A{background:linear-gradient(145deg,var(--vA),var(--vA-g));}
+.mpill.E{background:linear-gradient(145deg,var(--vE),var(--vE-g));}
+.mpill.I{background:linear-gradient(145deg,var(--vI),var(--vI-g));}
+.mpill.O{background:linear-gradient(145deg,var(--vO),var(--vO-g));}
+.mpill.U{background:linear-gradient(145deg,var(--vU),var(--vU-g));}
+
+.divider{width:52px;height:3px;background:var(--border);border-radius:100px;margin:18px auto;}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 6 — 5-DAY PLAN                       ║
+   ╚══════════════════════════════════════════════╝ */
+.plan-card{
+  background:var(--surface);border-radius:var(--r-card);
+  box-shadow:var(--shadow-m);
+  padding:22px 20px;width:100%;max-width:340px;
+  margin-bottom:20px;
+}
+.plan-title{
+  font-family:'Fredoka One',cursive;font-size:1.15rem;
+  color:var(--text);text-align:center;margin-bottom:16px;
+}
+.plan-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 0;border-bottom:1.5px solid var(--border);
+}
+.plan-row:last-child{border-bottom:none;}
+.plan-num{
+  width:36px;height:36px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:.95rem;
+  color:#fff;
+  background:linear-gradient(135deg,var(--primary),var(--orange));
+}
+.plan-dl{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.plan-dt{font-weight:700;font-size:.93rem;color:var(--text);}
+.plan-note{
+  font-size:.82rem;font-weight:600;color:var(--muted);
+  text-align:center;margin-top:12px;
+  background:#FAFAF5;border-radius:12px;padding:10px 14px;
+  line-height:1.5;
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 8 — MINI GAME                        ║
+   ╚══════════════════════════════════════════════╝ */
+.mini-vowel{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(3.5rem,18vw,5.5rem);
+  width:130px;height:130px;border-radius:36px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 22px;color:#fff;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);
+  animation:popIn .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{transform:scale(0) rotate(-14deg)}to{transform:scale(1) rotate(0)}}
+
+.mini-instr{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1rem,4.5vw,1.3rem);
+  color:var(--text);text-align:center;
+  margin-bottom:24px;line-height:1.35;
+}
+.mini-instr strong{color:var(--primary);}
+
+.img-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;max-width:320px;width:100%;margin-bottom:16px;
+}
+.icard{
+  background:var(--surface);border-radius:22px;
+  padding:14px 6px 11px;text-align:center;
+  cursor:pointer;border:3px solid transparent;
+  box-shadow:var(--shadow-s);
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+.icard:hover{transform:translateY(-5px) scale(1.05);border-color:var(--border);}
+.icard:active{transform:scale(.91);}
+.icard .ie{font-size:44px;display:block;margin-bottom:5px;}
+.icard .iw{
+  font-family:'Fredoka One',cursive;
+  font-size:.8rem;color:var(--text);line-height:1.2;
+}
+.icard.correct{border-color:var(--correct);background:#E8FBF1;animation:vPop .46s ease;}
+.icard.wrong  {border-color:var(--error);background:#FFE8D8;animation:vShake .38s ease;}
+.icard.locked {pointer-events:none;opacity:.5;}
+
+.round-dots{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
+.rdot{
+  width:12px;height:12px;border-radius:50%;
+  background:var(--border);transition:background .3s;
+}
+.rdot.done{background:var(--correct);}
+.rdot.current{background:var(--yellow);box-shadow:0 0 0 3px rgba(255,217,61,.3);}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  SCREEN 9 — FINAL                            ║
+   ╚══════════════════════════════════════════════╝ */
+.grad-cap{
+  font-size:82px;margin-bottom:12px;
+  animation:capDance 2.5s ease-in-out infinite;
+}
+@keyframes capDance{
+  0%,100%{transform:translateY(0)  rotate(-4deg)}
+  50%     {transform:translateY(-12px) rotate(4deg)}
+}
+.celebrate-box{
+  width:100%;max-width:340px;
+  background:linear-gradient(135deg,#FFFBEA,#FFF0F0);
+  border-radius:var(--r-card);border:2.5px solid var(--border);
+  padding:24px 20px;text-align:center;margin-bottom:22px;
+  overflow:hidden;position:relative;
+}
+.celebrate-box::before{
+  content:'🎊 🎉 ⭐ 🌟 🎈 ✨ 🎊 🎉 ⭐ 🌟';
+  display:block;font-size:.95rem;letter-spacing:4px;
+  margin-bottom:12px;opacity:.7;white-space:nowrap;
+  animation:marquee 8s linear infinite;
+}
+@keyframes marquee{from{transform:translateX(110%)}to{transform:translateX(-110%)}}
+.celebrate-text{
+  font-family:'Fredoka One',cursive;
+  font-size:1.08rem;color:var(--text);line-height:1.55;
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  STAR BURST OVERLAY                          ║
+   ╚══════════════════════════════════════════════╝ */
+#starLayer{
+  position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden;
+}
+.sp{
+  position:absolute;font-size:26px;
+  animation:sfx 1.5s ease-out forwards;
+}
+@keyframes sfx{
+  0%  {transform:translate(0,0) rotate(0deg) scale(.3);opacity:1}
+  65% {opacity:1}
+  100%{transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(1.1);opacity:0}
+}
+
+/* ╔══════════════════════════════════════════════╗
+   ║  RESPONSIVE                                  ║
+   ╚══════════════════════════════════════════════╝ */
+@media(max-width:360px){
+  .vbtn{width:54px;height:54px;font-size:1.5rem;border-radius:16px;}
+  .wc-emoji{font-size:66px;}
+  .icard .ie{font-size:36px;}
+}
+@media(min-width:600px){
+  .screen{padding:42px 28px 80px;}
+  .vowel-row{gap:14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Persistent music toggle -->
+<button class="music-pill" id="musicPill" aria-label="Música">🎵</button>
+
+<!-- Star burst layer -->
+<div id="starLayer"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 1 — WELCOME
+══════════════════════════════════════════════ -->
+<div class="screen active" id="scr-1">
+
+  <!-- Real logo image; falls back to inline SVG -->
+ <img src="logo-carrusel.png" class="logo" alt="Logo">
+       
+  <svg id="logo-svg" class="logo-fallback" viewBox="0 0 140 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <ellipse cx="70" cy="65" rx="56" ry="22" fill="#FFF0E0"/>
+    <circle  cx="34" cy="56" r="20"  fill="#FFF0E0"/>
+    <circle  cx="66" cy="46" r="26"  fill="#FFF0E0"/>
+    <circle  cx="98" cy="54" r="20"  fill="#FFF0E0"/>
+    <ellipse cx="70" cy="75" rx="44" ry="6" fill="#FFD8B0" opacity=".45"/>
+    <text x="12" y="76" font-family="'Fredoka One',cursive" font-size="18" fill="#FF5757">A</text>
+    <text x="35" y="72" font-family="'Fredoka One',cursive" font-size="18" fill="#FF9F43">E</text>
+    <text x="59" y="69" font-family="'Fredoka One',cursive" font-size="18" fill="#2ECC71">I</text>
+    <text x="78" y="72" font-family="'Fredoka One',cursive" font-size="18" fill="#3B9EFF">O</text>
+    <text x="99" y="76" font-family="'Fredoka One',cursive" font-size="18" fill="#9B59B6">U</text>
+    <text x="3"  y="20" font-size="14">⭐</text>
+    <text x="116" y="16" font-size="13">✨</text>
+  </svg>
+
+  <h1 class="h1">Juego diagnóstico<br>de <em>vocales</em></h1>
+  <p class="body">Descubre qué vocales reconoce tu hijo y cómo ayudarlo a mejorar.</p>
+
+  <div class="vowel-parade">
+    <div class="vp">A</div><div class="vp">E</div>
+    <div class="vp">I</div><div class="vp">O</div><div class="vp">U</div>
+  </div>
+
+  <button class="btn btn-primary" onclick="nav('scr-2')">🚀 Empezar</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 2 — CHILD AGE
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-2">
+  <button class="back-nav" onclick="nav('scr-1')">←</button>
+  <div style="height:38px"></div>
+
+  <h2 class="h2">¿Cuántos años tiene<br>tu hijo?</h2>
+  <p class="body" style="margin-bottom:22px;">Elegir la edad nos ayuda a personalizar la experiencia.</p>
+
+  <div class="age-grid" id="ageGrid">
+    <button class="btn btn-age" data-age="3" onclick="pickAge(this)"><span class="ico">👶</span> 3 años</button>
+    <button class="btn btn-age" data-age="4" onclick="pickAge(this)"><span class="ico">🧒</span> 4 años</button>
+    <button class="btn btn-age" data-age="5" onclick="pickAge(this)"><span class="ico">👦</span> 5 años</button>
+    <button class="btn btn-age" data-age="6" onclick="pickAge(this)"><span class="ico">🧑</span> 6 años</button>
+  </div>
+
+  <button class="btn btn-primary" id="ageContinueBtn"
+          style="opacity:.45;pointer-events:none"
+          onclick="nav('scr-3')">Continuar →</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 3 — DIFFICULTIES
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-3">
+  <button class="back-nav" onclick="nav('scr-2')">←</button>
+  <div style="height:38px"></div>
+
+  <h2 class="h2">¿Qué le cuesta más<br>a tu hijo?</h2>
+  <p class="body" style="margin-bottom:20px;">Puedes marcar una o varias opciones.</p>
+
+  <div class="check-stack">
+    <div class="check-row" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <span class="check-text">Confunde las vocales</span>
+    </div>
+    <div class="check-row" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <span class="check-text">Se frustra cuando se equivoca</span>
+    </div>
+    <div class="check-row" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <span class="check-text">Se aburre rápido</span>
+    </div>
+    <div class="check-row" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <span class="check-text">Olvida lo que aprende</span>
+    </div>
+    <div class="check-row" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <span class="check-text">Recién está empezando a aprender vocales</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="beginTest()">🎮 Empezar el test</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 4 — DIAGNOSTIC TEST
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-4">
+  <!-- Progress bar -->
+  <div class="quiz-bar-wrap">
+    <div class="quiz-bar-row">
+      <span class="quiz-bar-label" id="qLabel">Pregunta 1 de 5</span>
+      <span class="star-track" id="starTrack">⬜⬜⬜⬜⬜</span>
+    </div>
+    <div class="bar-bg"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+  </div>
+
+  <p class="quiz-q">¿Con qué vocal empieza<br>esta palabra?</p>
+
+  <div class="word-card">
+    <span class="wc-emoji" id="wEmoji">✈️</span>
+    <div class="wc-word"  id="wWord" >AVIÓN</div>
+  </div>
+
+  <div class="attempt-dots" id="attemptDots"></div>
+
+  <div class="vowel-row">
+    <button class="vbtn A" onclick="answerQ('A')">A</button>
+    <button class="vbtn E" onclick="answerQ('E')">E</button>
+    <button class="vbtn I" onclick="answerQ('I')">I</button>
+    <button class="vbtn O" onclick="answerQ('O')">O</button>
+    <button class="vbtn U" onclick="answerQ('U')">U</button>
+  </div>
+
+  <div class="fb-pill" id="qFb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 5 — RESULTS
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-5">
+  <div style="height:10px"></div>
+
+  <div class="score-ring">
+    <svg viewBox="0 0 120 120">
+      <circle class="ring-track" cx="60" cy="60" r="54"/>
+      <circle class="ring-prog"  cx="60" cy="60" r="54" id="ringProg"/>
+    </svg>
+    <div class="ring-center">
+      <span class="ring-pct" id="ringPct">0%</span>
+      <span class="ring-sub">de aciertos</span>
+    </div>
+  </div>
+
+  <div class="result-card">
+    <div class="rc-head">📋 Diagnóstico</div>
+    <div class="rc-body" id="diagText">…</div>
+  </div>
+
+  <div class="missed-pills" id="missedPills"></div>
+
+  <button class="btn btn-primary" onclick="window.location.href='https://TUENLACE.systeme.io'">Ver plan de práctica 📅</button>
+  <div style="height:8px"></div>
+  <button class="btn btn-ghost" onclick="beginTest()" style="font-size:.88rem;padding:11px 22px;">↩ Repetir test</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 6 — 5-DAY PLAN
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-6">
+  <h2 class="h2" style="margin-bottom:18px;">Plan rápido práctico<br>de 5 días</h2>
+
+  <div class="plan-card" id="planCard">
+    <div class="plan-title">📅 Tu plan personalizado</div>
+    <!-- rows injected by JS -->
+  </div>
+
+  <button class="btn btn-primary" onclick="nav('scr-7')">Ver mi pack recomendado 🎁</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 7 — PACK RECOMMENDATION
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-7">
+  <div style="height:10px"></div>
+  <div class="label">Pack recomendado para tu hijo</div>
+
+  <h2 class="h2" id="packTitle" style="margin-bottom:8px;">Pack Intermedio</h2>
+  <p class="body" id="packDesc">Actividades pensadas para reforzar las vocales que necesita practicar.</p>
+
+  <div id="packIconWrap"
+       style="width:92px;height:92px;border-radius:28px;display:flex;align-items:center;
+              justify-content:center;font-size:3rem;margin-bottom:22px;box-shadow:var(--shadow-m);">
+    📘
+  </div>
+
+  <button class="btn btn-pack" id="packBtn" onclick="openPackLink()">Ver Pack Intermedio</button>
+
+  <div class="divider"></div>
+
+  <!-- Surprise mini-game entry point — separate from test -->
+  <button class="btn btn-surprise" onclick="launchMiniGame()">🎁 Jugar minijuego sorpresa</button>
+  <div style="height:8px"></div>
+  <button class="btn btn-ghost" onclick="nav('scr-5')" style="font-size:.88rem;padding:11px 22px;">← Ver resultados</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 8 — SURPRISE MINI GAME
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-8">
+  <div class="label" style="margin-bottom:14px;">Minijuego sorpresa 🎉</div>
+
+  <div class="round-dots" id="roundDots"></div>
+
+  <div class="mini-vowel" id="miniVowelEl">A</div>
+
+  <p class="mini-instr" id="miniInstr">
+    Toca la imagen que empiece<br>con la vocal <strong id="miniHint">A</strong>
+  </p>
+
+  <div class="img-grid" id="imgGrid"></div>
+
+  <div class="fb-pill" id="miniFb"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 9 — FINAL
+══════════════════════════════════════════════ -->
+<div class="screen" id="scr-9">
+  <div class="grad-cap">🎓</div>
+  <h2 class="h2" style="margin-bottom:10px;">¡Sigue aprendiendo!</h2>
+
+  <div class="celebrate-box">
+    <p class="celebrate-text">
+      Con práctica diaria los niños pueden dominar las vocales
+      y avanzar con confianza en la lectura.
+    </p>
+  </div>
+
+  <button class="btn btn-pack" id="finalPackBtn" onclick="openPackLink()">🎁 Ver mi pack recomendado</button>
+  <div style="height:10px"></div>
+  <button class="btn btn-ghost" onclick="restartAll()">🏠 Volver al inicio</button>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ─── STATE ───────────────────────────────────── */
+let state = {
+  age: null,
+  difficulties: [],
+  quizOrder:  [],
+  qIndex:     0,
+  starsEarned:[],       // true = correct on first try or eventually
+  mistakeVowels: [],    // vowels where errors occurred
+  attemptsThisQ: 0,
+  blocked: false,
+  recommendedPack: 'basico',
+  packLinks: {
+    basico:     '#pack-basico',
+    intermedio: '#pack-intermedio',
+    premium:    '#pack-premium'
+  }
+};
+
+/* ─── QUIZ DATA (words that truly start with vowel) ─── */
+const QUIZ_WORDS = [
+  { word:'AVIÓN',    emoji:'✈️',  vowel:'A' },
+  { word:'ELEFANTE', emoji:'🐘',  vowel:'E' },
+  { word:'IGLESIA',  emoji:'⛪',  vowel:'I' },
+  { word:'OSO',      emoji:'🐻',  vowel:'O' },
+  { word:'UVA',      emoji:'🍇',  vowel:'U' },
+];
+
+/* ─── MINI GAME DATA ───────────────────────────── */
+// Correct options: words that strictly start with the target vowel
+const MINI_CORRECT = {
+  A: [{e:'🦅',w:'ÁGUILA'},{e:'✈️',w:'AVIÓN'},{e:'🥑',w:'AGUACATE'},{e:'🌳',w:'ÁRBOL'},{e:'🕷️',w:'ARAÑA'}],
+  E: [{e:'⭐',w:'ESTRELLA'},{e:'🐘',w:'ELEFANTE'},{e:'🦔',w:'ERIZO'},{e:'🏫',w:'ESCUELA'},{e:'🚉',w:'ESTACIÓN'}],
+  I: [{e:'🦎',w:'IGUANA'},{e:'🧲',w:'IMAN'},{e:'🏝️',w:'ISLA'},{e:'💡',w:'IDEA'},{e:'🖨️',w:'IMPRESORA'}],
+  O: [{e:'🐻',w:'OSO'},{e:'👁️',w:'OJO'},{e:'🌊',w:'OLA'},{e:'🐑',w:'OVEJA'},{e:'👂',w:'OREJA'}],
+  U: [{e:'🍇',w:'UVA'},{e:'🦄',w:'UNICORNIO'},{e:'💅',w:'UÑA'},{e:'1️⃣',w:'UNO'},{e:'🎸',w:'UKELELE'}],
+};
+// Distractor pool — words that do NOT start with A E I O U
+const DISTRACTORS = [
+  {e:'🐱',w:'GATO'},{e:'🐶',w:'PERRO'},{e:'🍌',w:'BANANA'},{e:'🌸',w:'FLOR'},
+  {e:'🏠',w:'CASA'},{e:'☀️',w:'SOL'},{e:'🎈',w:'GLOBO'},{e:'🐟',w:'PEZ'},
+  {e:'🍕',w:'PIZZA'},{e:'🚗',w:'CARRO'},{e:'📚',w:'LIBRO'},{e:'🎺',w:'TROMPETA'},
+  {e:'🍎',w:'FRUTA'},{e:'🌵',w:'CACTUS'},{e:'🎀',w:'MOÑO'},
+];
+
+let miniState = {
+  rounds: [],
+  idx: 0,
+  total: 4,
+};
+
+/* ─── PLAN CONTENT ─────────────────────────────── */
+const PLANS = {
+  basico: [
+    {d:'Día 1', t:'Reconocer las vocales'},
+    {d:'Día 2', t:'Buscar palabras con cada vocal'},
+    {d:'Día 3', t:'Leer las vocales en voz alta'},
+    {d:'Día 4', t:'Practicar nuevamente'},
+    {d:'Día 5', t:'Pequeño reto de reconocimiento'},
+  ],
+  intermedio:[
+    {d:'Día 1', t:'Reconocer las vocales'},
+    {d:'Día 2', t:'Buscar palabras con cada vocal'},
+    {d:'Día 3', t:'Realizar un pequeño juego de vocales'},
+    {d:'Día 4', t:'Practicar nuevamente'},
+    {d:'Día 5', t:'Reto divertido de vocales'},
+  ],
+  premium:[
+    {d:'Día 1', t:'Reconocer cada vocal'},
+    {d:'Día 2', t:'Identificar palabras con cada vocal'},
+    {d:'Día 3', t:'Juego educativo de vocales'},
+    {d:'Día 4', t:'Repaso con actividades'},
+    {d:'Día 5', t:'Mini desafío final'},
+  ],
+};
+
+/* ─── AUDIO ENGINE ─────────────────────────────── */
+let AC = null, bgGain = null, musicOn = true, melodyTimer = null;
+const MELODY = [
+  261.63,293.66,329.63,349.23,392,349.23,329.63,293.66,
+  261.63,0,329.63,349.23,392,440,392,349.23,
+  329.63,0,293.66,329.63,261.63,0,261.63,293.66
+];
+
+function initAudio(){
+  if(AC) return;
+  try{
+    AC = new (window.AudioContext||window.webkitAudioContext)();
+    bgGain = AC.createGain();
+    bgGain.gain.value = 0.054;
+    bgGain.connect(AC.destination);
+    loopMelody();
+  }catch(e){}
+}
+
+function loopMelody(){
+  if(!AC||!musicOn) return;
+  let t = AC.currentTime;
+  const d = 0.42;
+  MELODY.forEach(f=>{
+    if(f===0){t+=d*.75;return;}
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type='sine'; o.frequency.value=f;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(.38,t+.04);
+    g.gain.linearRampToValueAtTime(0,t+d-.04);
+    o.connect(g); g.connect(bgGain);
+    o.start(t); o.stop(t+d);
+    t+=d*.88;
+  });
+  melodyTimer = setTimeout(loopMelody,(t-AC.currentTime)*1000-200);
+}
+
+function sndSuccess(){
+  if(!AC) return;
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+i*.1;
+    o.frequency.value=f; o.type='sine';
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3,t+.03); g.gain.linearRampToValueAtTime(0,t+.22);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+.25);
+  });
+}
+function sndError(){
+  if(!AC) return;
+  [220,196].forEach((f,i)=>{
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+i*.14;
+    o.type='triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(.17,t); g.gain.linearRampToValueAtTime(0,t+.28);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+.3);
+  });
+}
+
+document.getElementById('musicPill').addEventListener('click',function(){
+  initAudio();
+  musicOn=!musicOn;
+  if(bgGain) bgGain.gain.setValueAtTime(musicOn?.054:0,AC.currentTime);
+  if(musicOn) loopMelody(); else clearTimeout(melodyTimer);
+  this.textContent = musicOn?'🎵':'🔇';
+});
+['click','touchstart'].forEach(e=>document.addEventListener(e,initAudio,{once:true}));
+
+/* ─── NAVIGATION ───────────────────────────────── */
+function nav(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ─── HELPERS ──────────────────────────────────── */
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function showFb(id,msg,type){
+  const el=document.getElementById(id);
+  el.textContent=msg;
+  el.className=`fb-pill ${type} show`;
+}
+function hideFb(id){
+  const el=document.getElementById(id);
+  el.className='fb-pill'; el.textContent='';
+}
+
+function stars(){ // burst animation
+  const layer=document.getElementById('starLayer');
+  const icons=['⭐','🌟','✨','💫','🎉','🎊'];
+  const cx=window.innerWidth/2, cy=window.innerHeight/2;
+  for(let i=0;i<18;i++){
+    setTimeout(()=>{
+      const el=document.createElement('div'); el.className='sp';
+      el.textContent=icons[Math.floor(Math.random()*icons.length)];
+      const tx=(Math.random()-.5)*400, ty=(Math.random()-.5)*400-60;
+      const rot=(Math.random()-.5)*720;
+      el.style.cssText=`--tx:${tx}px;--ty:${ty}px;--rot:${rot}deg;
+        left:${cx-13+(Math.random()-.5)*60}px;
+        top:${cy-13+(Math.random()-.5)*60}px;`;
+      layer.appendChild(el);
+      setTimeout(()=>el.remove(),1600);
+    },i*52);
+  }
+}
+
+/* ─── SCREEN 2 ──────────────────────────────────── */
+function pickAge(btn){
+  document.querySelectorAll('.btn-age').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  state.age = btn.dataset.age;
+  const cb = document.getElementById('ageContinueBtn');
+  cb.style.opacity='1'; cb.style.pointerEvents='auto';
+}
+
+/* ─── SCREEN 3 ──────────────────────────────────── */
+function toggleCheck(row){
+  row.classList.toggle('checked');
+}
+
+/* ─── QUIZ INIT ─────────────────────────────────── */
+function beginTest(){
+  state.quizOrder   = shuffle(QUIZ_WORDS);
+  state.qIndex      = 0;
+  state.starsEarned = [];
+  state.mistakeVowels = [];
+  state.attemptsThisQ = 0;
+  state.blocked     = false;
+  nav('scr-4');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = state.quizOrder[state.qIndex];
+  document.getElementById('wEmoji').textContent = q.emoji;
+  document.getElementById('wWord').textContent  = q.word;
+  document.getElementById('qLabel').textContent =
+    `Pregunta ${state.qIndex+1} de ${state.quizOrder.length}`;
+  document.getElementById('barFill').style.width =
+    `${(state.qIndex/state.quizOrder.length)*100}%`;
+
+  // Star track
+  const track = state.starsEarned.map(v=>v?'⭐':'❌');
+  while(track.length<state.quizOrder.length) track.push('⬜');
+  document.getElementById('starTrack').textContent = track.join('');
+
+  document.getElementById('attemptDots').innerHTML = '';
+  state.attemptsThisQ = 0;
+  state.blocked = false;
+  hideFb('qFb');
+  document.querySelectorAll('.vbtn').forEach(b=>b.disabled=false);
+}
+
+/* ─── QUIZ ANSWER ───────────────────────────────── */
+function answerQ(sel){
+  if(state.blocked) return;
+  const q = state.quizOrder[state.qIndex];
+  if(sel === q.vowel){
+    // CORRECT
+    state.blocked = true;
+    state.starsEarned[state.qIndex] = (state.attemptsThisQ === 0) ? true : true;
+    // mark vowel as needing practice if any error occurred
+    if(state.attemptsThisQ > 0 && !state.mistakeVowels.includes(q.vowel)){
+      state.mistakeVowels.push(q.vowel);
+    }
+    const btn=[...document.querySelectorAll('.vbtn')].find(b=>b.textContent===sel);
+    btn.classList.add('anim-pop');
+    document.querySelectorAll('.vbtn').forEach(b=>b.disabled=true);
+    showFb('qFb','¡Muy bien! ⭐','ok');
+    sndSuccess(); stars();
+    setTimeout(()=>{
+      btn.classList.remove('anim-pop');
+      state.qIndex++;
+      if(state.qIndex < state.quizOrder.length){
+        renderQuestion();
+      } else {
+        buildResults();
+      }
+    },1550);
+  } else {
+    // WRONG
+    if(!state.mistakeVowels.includes(q.vowel)) state.mistakeVowels.push(q.vowel);
+    state.starsEarned[state.qIndex] = false;
+    state.attemptsThisQ++;
+    state.blocked = true;
+    const btn=[...document.querySelectorAll('.vbtn')].find(b=>b.textContent===sel);
+    btn.classList.add('anim-shake');
+    // add error dot
+    const dot=document.createElement('div'); dot.className='adot';
+    document.getElementById('attemptDots').appendChild(dot);
+    showFb('qFb','Casi… intenta otra vez 💙','err');
+    sndError();
+    setTimeout(()=>{
+      btn.classList.remove('anim-shake');
+      state.blocked=false;
+    },480);
+  }
+}
+
+/* ─── BUILD RESULTS ─────────────────────────────── */
+function buildResults(){
+  const total   = state.quizOrder.length;
+  // count questions answered correctly (eventually)
+  const correct = state.quizOrder.filter(q=>!state.mistakeVowels.includes(q.vowel)).length;
+  // If a vowel had errors but was eventually answered right, we still count it as needing practice
+  // So "correct" = vowels with 0 errors
+  const errCount = state.mistakeVowels.length;
+  const pct      = Math.round(((total - errCount)/total)*100);
+
+  // Ring animation
+  const circ = 2*Math.PI*54; // ≈339
+  const offset = circ * (1 - pct/100);
+  setTimeout(()=>{
+    document.getElementById('ringProg').style.strokeDashoffset = offset;
+  },120);
+  document.getElementById('ringPct').textContent = pct+'%';
+
+  // Diagnosis text
+  let diagHTML = '';
+  if(errCount === 0){
+    diagHTML = '¡Tu hijo reconoce muy bien todas las vocales! 🏆';
+    state.recommendedPack = 'basico';
+  } else if(errCount === 1){
+    diagHTML = `Tu hijo necesita practicar la vocal: <strong>${state.mistakeVowels[0]}</strong>`;
+    state.recommendedPack = 'intermedio';
+  } else if(errCount <= 3){
+    diagHTML = `Tu hijo necesita practicar las vocales: <strong>${state.mistakeVowels.join(', ')}</strong>`;
+    state.recommendedPack = 'intermedio';
+  } else if(errCount === 4){
+    diagHTML = 'Tu hijo necesita reforzar varias vocales.';
+    state.recommendedPack = 'premium';
+  } else {
+    diagHTML = 'Tu hijo está comenzando a aprender las vocales. ¡Con práctica mejorará muy rápido! 🌱';
+    state.recommendedPack = 'basico';
+  }
+  document.getElementById('diagText').innerHTML = diagHTML;
+
+  // Missed vowel pills
+  const mp = document.getElementById('missedPills');
+  mp.innerHTML='';
+  state.mistakeVowels.forEach(v=>{
+    const d=document.createElement('div');
+    d.className=`mpill ${v}`;d.textContent=v;
+    mp.appendChild(d);
+  });
+
+  // Build plan
+  buildPlan();
+  // Setup pack screens
+  setupPackUI();
+
+  nav('scr-5');
+  if(errCount===0) stars();
+}
+
+/* ─── PLAN SCREEN ───────────────────────────────── */
+function buildPlan(){
+  const rows = PLANS[state.recommendedPack];
+  const card = document.getElementById('planCard');
+  // Keep .plan-title, rebuild rows
+  card.innerHTML=`<div class="plan-title">📅 Tu plan personalizado</div>`;
+  rows.forEach((r,i)=>{
+    card.innerHTML+=`
+      <div class="plan-row">
+        <div class="plan-num">${i+1}</div>
+        <div>
+          <div class="plan-dl">${r.d}</div>
+          <div class="plan-dt">${r.t}</div>
+        </div>
+      </div>`;
+  });
+  card.innerHTML+=`
+    <div class="plan-note">✨ Este plan está incluido dentro del pack recomendado.</div>`;
+}
+
+/* ─── PACK UI ────────────────────────────────────── */
+const PACK_META = {
+  basico:{
+    title:'Pack Básico',
+    desc:'Perfecto para iniciar el aprendizaje de las vocales con actividades lúdicas y sencillas.',
+    icon:'⭐', iconBg:'#FFF8E1', cls:'basico',
+  },
+  intermedio:{
+    title:'Pack Intermedio',
+    desc:'Actividades diseñadas para reforzar las vocales que tu hijo necesita practicar.',
+    icon:'🌟', iconBg:'#FFF3E0', cls:'intermedio',
+  },
+  premium:{
+    title:'Pack Premium',
+    desc:'El programa completo para dominar todas las vocales con seguimiento paso a paso.',
+    icon:'💎', iconBg:'#F3E5F5', cls:'premium',
+  },
+};
+function setupPackUI(){
+  const m = PACK_META[state.recommendedPack];
+  document.getElementById('packTitle').textContent = m.title;
+  document.getElementById('packDesc').textContent  = m.desc;
+  const iw = document.getElementById('packIconWrap');
+  iw.textContent = m.icon; iw.style.background = m.iconBg;
+  const pb = document.getElementById('packBtn');
+  pb.textContent = `Ver ${m.title}`;
+  pb.className = `btn btn-pack ${m.cls}`;
+  // Final screen button
+  const fb = document.getElementById('finalPackBtn');
+  fb.textContent = `🎁 Ver ${m.title}`;
+  fb.className = `btn btn-pack ${m.cls}`;
+}
+
+function openPackLink(){
+  window.open(state.packLinks[state.recommendedPack],'_blank');
+}
+
+/* ─── MINI GAME LAUNCH (from pack screen only) ──── */
+function launchMiniGame(){
+  // Build 4 rounds from shuffled vowels
+  const vowels = shuffle(['A','E','I','O','U']).slice(0, miniState.total);
+  miniState.rounds = vowels.map(v=>{
+    const correctItem = shuffle(MINI_CORRECT[v])[0];
+    const distractors = shuffle(DISTRACTORS).slice(0,2);
+    return {
+      vowel: v,
+      options: shuffle([
+        {...correctItem, correct:true},
+        {...distractors[0], correct:false},
+        {...distractors[1], correct:false},
+      ])
+    };
+  });
+  miniState.idx = 0;
+  nav('scr-8');
+  renderMiniRound();
+}
+
+function renderMiniRound(){
+  const r = miniState.rounds[miniState.idx];
+
+  // Round dots
+  const dotsEl=document.getElementById('roundDots');
+  dotsEl.innerHTML='';
+  for(let i=0;i<miniState.total;i++){
+    const d=document.createElement('div');
+    d.className='rdot'+(i<miniState.idx?' done':i===miniState.idx?' current':'');
+    dotsEl.appendChild(d);
+  }
+
+  // Vowel color
+  const vc={
+    A:{bg:'linear-gradient(145deg,#FF5757,#FF3B3B)',sh:'rgba(255,87,87,.52)'},
+    E:{bg:'linear-gradient(145deg,#FF9F43,#F9842A)',sh:'rgba(255,159,67,.52)'},
+    I:{bg:'linear-gradient(145deg,#2ECC71,#27AE60)',sh:'rgba(46,204,113,.52)'},
+    O:{bg:'linear-gradient(145deg,#3B9EFF,#2980B9)',sh:'rgba(59,158,255,.52)'},
+    U:{bg:'linear-gradient(145deg,#9B59B6,#8E44AD)',sh:'rgba(155,89,182,.52)'},
+  }[r.vowel];
+  const mv=document.getElementById('miniVowelEl');
+  mv.textContent=r.vowel;
+  mv.style.background=vc.bg;
+  mv.style.boxShadow=`0 12px 40px ${vc.sh}`;
+  mv.style.animation='none';
+  requestAnimationFrame(()=>{ mv.style.animation='popIn .45s cubic-bezier(.34,1.56,.64,1)'; });
+
+  document.getElementById('miniHint').textContent=r.vowel;
+
+  // Build image cards
+  const grid=document.getElementById('imgGrid');
+  grid.innerHTML='';
+  r.options.forEach(opt=>{
+    const card=document.createElement('div');
+    card.className='icard';
+    card.innerHTML=`<span class="ie">${opt.e}</span><span class="iw">${opt.w}</span>`;
+    card.addEventListener('click',()=>miniAnswer(card,opt.correct));
+    grid.appendChild(card);
+  });
+
+  hideFb('miniFb');
+}
+
+function miniAnswer(card,isCorrect){
+  if(isCorrect){
+    card.classList.add('correct');
+    document.querySelectorAll('.icard').forEach(c=>c.classList.add('locked'));
+    showFb('miniFb','¡Correcto! ⭐','ok');
+    sndSuccess(); stars();
+    setTimeout(()=>{
+      miniState.idx++;
+      if(miniState.idx < miniState.total){
+        renderMiniRound();
+      } else {
+        nav('scr-9');
+      }
+    },1600);
+  } else {
+    card.classList.add('wrong');
+    showFb('miniFb','Casi… sigue intentando 💙','err');
+    sndError();
+    setTimeout(()=>{
+      card.classList.remove('wrong');
+      hideFb('miniFb');
+    },900);
+  }
+}
+
+/* ─── RESTART ───────────────────────────────────── */
+function restartAll(){
+  state.age=null; state.difficulties=[];
+  document.querySelectorAll('.btn-age').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.check-row').forEach(r=>r.classList.remove('checked'));
+  const cb=document.getElementById('ageContinueBtn');
+  cb.style.opacity='.45'; cb.style.pointerEvents='none';
+  nav('scr-1');
+}
+</script>
+</body>
+</html>
